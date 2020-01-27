@@ -1,0 +1,38 @@
+version: "3.4"
+
+configs:
+
+  postgres_exporter_config:
+    file: ./queries.yaml
+
+  #postgres92_exporter_config:
+  #  file: ./queries92.yaml
+
+services:
+
+  # Example for PostgreSQL 9.4 or later host
+  postgres-exporter-pgserver94:
+    image: wrouesnel/postgres_exporter:latest
+    configs:
+      - source: postgres_exporter_config
+        target: /etc/postgres_exporter/queries.yaml
+    deploy:
+      mode: replicated
+      replicas: 1
+    environment:
+      - DATA_SOURCE_NAME=postgresql://postgres@pgserver94.example.com:5432/postgres?sslmode=disable
+      - PG_EXPORTER_EXTEND_QUERY_PATH=/etc/postgres_exporter/queries.yaml
+
+  # Example for older PostgreSQL 9.2
+  #postgres-exporter-pgserver92:
+  #  image: wrouesnel/postgres_exporter:latest
+  #  configs:
+  #    - source: postgres92_exporter_config
+  #      target: /etc/postgres_exporter/queries.yaml
+  #  deploy:
+  #    mode: replicated
+  #    replicas: 1
+  #  environment:
+  #    - DATA_SOURCE_NAME=postgresql://postgres@pgserver92.example.com:5432/postgres?sslmode=disable
+  #    - PG_EXPORTER_EXTEND_QUERY_PATH=/etc/postgres_exporter/queries.yaml
+  #    - PG_EXPORTER_DISABLE_DEFAULT_METRICS=true

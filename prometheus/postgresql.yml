@@ -1,0 +1,125 @@
+groups:
+
+- name: postgresql.rules
+  rules:
+
+  - alert: PostgreSQLExporterPGserver94
+    expr: absent(up{instance="postgres-exporter-pgserver94:9187",job="postgres-exporter"} == 1)
+    for: 2h
+    labels:
+      severity: warning
+    annotations:
+      summary: postgres-exporter-pgserver94 has disappeared from Prometheus target discovery.
+
+  #- alert: PostgreSQLStreamingPGserver94ToPGserver94replica1
+  # See https://www.postgresql.org/docs/9.4/warm-standby.html#STREAMING-REPLICATION-SLOTS
+  # also search for application_name in https://wiki.postgresql.org/wiki/What%27s_new_in_PostgreSQL_9.1
+  #  expr: absent(pg_stat_replication_pid{application_name="pgserver94replica1.example.com",server="pgserver94.example.com:5432",state="streaming"}) == 1
+  #  for: 4h
+  #  labels:
+  #    severity: warning
+  #    channel: database
+  #  annotations:
+  #    description: 'Replication to {{ $labels.application_name }} from {{ $labels.server }} has not been streaming for over 4 hours'
+  #    summary: 'Streaming replication to {{ $labels.application_name }} is not occurring'
+
+  - alert: PostgreSQLRollbacks
+    expr: rate(pg_stat_database_xact_rollback[1m]) > 10
+    for: 5m
+    labels:
+      severity: warning
+      channel: database
+    annotations:
+      description: 'Rollbacks on {{$labels.server}} {{$labels.datname}} is occuring at a rate of {{$value}} per minute'
+      summary: 'Rollbacks are occurring on {{$labels.server}} {{$labels.datname}}'
+
+  - alert: PostgreSQL_Replication_Lag_10GB
+    expr: pg_replication_replay_location_lag > 10000000000
+    labels:
+      channel: database
+      severity: warning
+    annotations:
+      description: 'Database replication replay location lag on {{$labels.server}} to {{$labels.application_name}} is {{ $value | humanize }}B'
+      summary: 'Postgres replication lag is {{ $value | humanize }}B'
+
+  - alert: PGExporterScrapeError
+    expr: pg_exporter_last_scrape_error > 0
+    for: 5h
+    labels:
+      channel: database
+      service: postgresql
+      severity: warning
+      severity_num: 300
+    annotations:
+      summary: 'Postgres Exporter running on {{ $labels.job }} (instance: {{ $labels.instance }}) is encountering scrape errors processing queries. Error count: ( {{ $value }} )'
+
+  - alert: PGIsUp
+    expr: pg_up < 1
+    for: 5h
+    labels:
+      channel: database
+      service: postgresql
+      severity: warning
+      severity_num: 300
+    annotations:
+      summary: 'postgres_exporter running on {{ $labels.job }} is unable to communicate with the configured database'
+
+  - alert: PGXIDWraparound
+    expr: ccp_transaction_wraparound_percent_towards_wraparound > 50
+    for: 2h
+    labels:
+      channel: database
+      service: postgresql
+      severity: warning
+      severity_num: 200
+    annotations:
+      description: 'PGSQL Instance {{ $labels.job }} is over 50% towards transaction id wraparound.'
+      summary: 'PGSQL Instance {{ $labels.job }} transaction id wraparound imminent'
+
+  - alert: PGXIDWraparound
+    expr: ccp_transaction_wraparound_percent_towards_wraparound > 75
+    for: 5h
+    labels:
+      channel: database
+      service: postgresql
+      severity: critical
+      severity_num: 300
+    annotations:
+      description: 'PGSQL Instance {{ $labels.job }} is over 75% towards transaction id wraparound.'
+      summary: 'PGSQL Instance transaction id wraparound imminent'
+
+  - alert: PGEmergencyVacuum
+    expr: ccp_transaction_wraparound_percent_towards_emergency_autovac > 110
+    for: 5h
+    labels:
+      channel: database
+      service: postgresql
+      severity: warning
+      severity_num: 200
+    annotations:
+      description: 'PGSQL Instance {{ $labels.job }} is over 110% beyond autovacuum_freeze_max_age value. Autovacuum may need tuning to better keep up.'
+      summary: 'PGSQL Instance emergency vacuum imminent'
+
+  - alert: PGEmergencyVacuum
+    expr: ccp_transaction_wraparound_percent_towards_emergency_autovac > 125
+    for: 2h
+    labels:
+      channel: database
+      service: postgresql
+      severity: critical
+      severity_num: 300
+    annotations:
+      description: 'PGSQL Instance {{ $labels.job }} is over 125% beyond autovacuum_freeze_max_age value. Autovacuum needs tuning to better keep up.'
+      summary: 'PGSQL Instance emergency vacuum imminent'
+
+  - alert: PGReplicationSlotsInactive
+    expr: ccp_replication_slots_active == 0
+    for: 5h
+    labels:
+      channel: database
+      service: postgresql
+      severity: warning
+      severity_num: 300
+    annotations:
+      description: 'PGSQL Instance {{ $labels.job }} has one or more inactive replication slots'
+      summary: 'PGSQL Instance inactive replication slot'
