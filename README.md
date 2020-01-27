@@ -1,4 +1,4 @@
-# swarmstack/postgresql-exporter
+# swarmstack/postgresql-exporters
 
 Docker compose file for postgres-exporter, Prometheus configuration example, and Grafana Dashboard for PostgreSQL servers
 
